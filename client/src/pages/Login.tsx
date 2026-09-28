@@ -17,17 +17,22 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
     setError("");
     setLoading(true);
 
     try {
-      const response = await api.post("/auth/login", {
-        email,
-        password,
-      });
+      const response = await api.post(
+        "/auth/login",
+        {
+          email,
+          password,
+        }
+      );
 
       const { token, user } = response.data;
 
@@ -38,7 +43,10 @@ function Login() {
         })
       );
 
-      console.log("Login successful:", user);
+      console.log(
+        "Login successful:",
+        user
+      );
 
       navigate("/");
     } catch (error: any) {
@@ -66,36 +74,60 @@ function Login() {
           <h2>Welcome back</h2>
 
           <p className="auth-subtitle">
-            Sign in to continue to your professional network.
+            Sign in to continue to your
+            professional network.
           </p>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">
+                Email
+              </label>
 
               <input
                 id="email"
                 type="email"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">
+                Password
+              </label>
 
               <input
                 id="password"
                 type="password"
                 placeholder="Enter your password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
                 required
               />
+            </div>
+
+            <div
+              style={{
+                textAlign: "right",
+                marginBottom: "15px",
+              }}
+            >
+              <Link to="/forgot-password">
+                Forgot Password?
+              </Link>
             </div>
 
             <button
@@ -103,13 +135,17 @@ function Login() {
               className="auth-button"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading
+                ? "Logging in..."
+                : "Login"}
             </button>
           </form>
 
           <p className="auth-footer">
             Don't have an account?{" "}
-            <Link to="/signup">Create an account</Link>
+            <Link to="/signup">
+              Create an account
+            </Link>
           </p>
         </div>
       </div>

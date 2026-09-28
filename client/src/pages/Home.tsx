@@ -46,9 +46,6 @@ function Home() {
 
   const [posts, setPosts] = useState<Post[]>([]);
 
-  const [content, setContent] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-
   const [comments, setComments] = useState<
     Record<string, Comment[]>
   >({});
@@ -58,7 +55,6 @@ function Home() {
   >({});
 
   const [loading, setLoading] = useState(true);
-  const [posting, setPosting] = useState(false);
 
   const [likingPostId, setLikingPostId] = useState<string | null>(
     null
@@ -117,55 +113,6 @@ function Home() {
   useEffect(() => {
     fetchPosts();
   }, []);
-
-  // =========================
-  // Create Post
-  // =========================
-
-  const handleCreatePost = async (
-    event: FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
-
-    if (!content.trim()) {
-      setError("Post content is required.");
-      return;
-    }
-
-    try {
-      setPosting(true);
-      setError("");
-
-      const response = await api.post("/posts", {
-        content: content.trim(),
-        imageUrl: imageUrl.trim() || undefined,
-      });
-
-      const newPost = {
-        ...response.data.post,
-        likes: Array.isArray(response.data.post.likes)
-          ? response.data.post.likes
-          : [],
-      };
-
-      setPosts((currentPosts) => [
-        newPost,
-        ...currentPosts,
-      ]);
-
-      setContent("");
-      setImageUrl("");
-    } catch (error: any) {
-      console.error("Create post error:", error);
-
-      setError(
-        error.response?.data?.message ||
-          "Unable to create post."
-      );
-    } finally {
-      setPosting(false);
-    }
-  };
 
   // =========================
   // Like / Unlike
@@ -386,6 +333,10 @@ function Home() {
     }
   };
 
+  // =========================
+  // Render
+  // =========================
+
   return (
     <div>
       <Navbar />
@@ -393,9 +344,7 @@ function Home() {
       <main className="home-page">
         <div className="home-container">
 
-          {/* =========================
-              Page Header
-              ========================= */}
+          {/* Page Header */}
 
           <div className="home-header">
             <h1>Home</h1>
@@ -405,47 +354,7 @@ function Home() {
             </p>
           </div>
 
-          {/* =========================
-              Create Post
-              ========================= */}
-
-          <div className="create-post-card">
-            <h2>Create a post</h2>
-
-            <form onSubmit={handleCreatePost}>
-              <textarea
-                className="create-post-textarea"
-                placeholder="What do you want to share?"
-                value={content}
-                onChange={(event) =>
-                  setContent(event.target.value)
-                }
-                rows={4}
-              />
-
-              <input
-                className="create-post-input"
-                type="url"
-                placeholder="Image URL (optional)"
-                value={imageUrl}
-                onChange={(event) =>
-                  setImageUrl(event.target.value)
-                }
-              />
-
-              <button
-                type="submit"
-                className="post-button"
-                disabled={posting}
-              >
-                {posting ? "Posting..." : "Post"}
-              </button>
-            </form>
-          </div>
-
-          {/* =========================
-              Error
-              ========================= */}
+          {/* Error */}
 
           {error && (
             <div className="error-message">
@@ -453,9 +362,7 @@ function Home() {
             </div>
           )}
 
-          {/* =========================
-              Loading
-              ========================= */}
+          {/* Loading */}
 
           {loading && (
             <div className="home-placeholder">
@@ -463,9 +370,7 @@ function Home() {
             </div>
           )}
 
-          {/* =========================
-              Empty State
-              ========================= */}
+          {/* Empty State */}
 
           {!loading && !error && posts.length === 0 && (
             <div className="home-placeholder">
@@ -477,9 +382,7 @@ function Home() {
             </div>
           )}
 
-          {/* =========================
-              Feed
-              ========================= */}
+          {/* Feed */}
 
           {!loading && posts.length > 0 && (
             <div className="feed">
@@ -504,19 +407,34 @@ function Home() {
                     key={post._id}
                     className="post-card"
                   >
-                    {/* =========================
-                        Post Header
-                        ========================= */}
+
+                    {/* Post Header */}
 
                     <div className="post-header">
-                      <div className="post-avatar">
-                        {post.author?.firstName
-                          ?.charAt(0)
-                          .toUpperCase()}
 
-                        {post.author?.lastName
-                          ?.charAt(0)
-                          .toUpperCase()}
+                      <div className="post-avatar">
+                        {post.author?.photoUrl ? (
+                          <img
+                            src={post.author.photoUrl}
+                            alt={`${post.author.firstName} ${post.author.lastName}`}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <>
+                            {post.author?.firstName
+                              ?.charAt(0)
+                              .toUpperCase()}
+
+                            {post.author?.lastName
+                              ?.charAt(0)
+                              .toUpperCase()}
+                          </>
+                        )}
                       </div>
 
                       <div>
@@ -538,9 +456,7 @@ function Home() {
                       </div>
                     </div>
 
-                    {/* =========================
-                        Post Content
-                        ========================= */}
+                    {/* Post Content */}
 
                     <div className="post-content">
                       <p>{post.content}</p>
@@ -554,9 +470,7 @@ function Home() {
                       )}
                     </div>
 
-                    {/* =========================
-                        Post Footer
-                        ========================= */}
+                    {/* Post Footer */}
 
                     <div className="post-footer">
                       <span>
@@ -608,9 +522,7 @@ function Home() {
                       </div>
                     </div>
 
-                    {/* =========================
-                        Comments
-                        ========================= */}
+                    {/* Comments */}
 
                     <div className="comments-section">
                       <h4>Comments</h4>
@@ -694,10 +606,49 @@ function Home() {
                               key={comment._id}
                               className="comment-item"
                             >
-                              <strong>
-                                {comment.author?.firstName}{" "}
-                                {comment.author?.lastName}
-                              </strong>
+
+                              {/* Comment Author */}
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                  marginBottom: "8px",
+                                }}
+                              >
+                                <div className="post-avatar">
+                                  {comment.author?.photoUrl ? (
+                                    <img
+                                      src={
+                                        comment.author.photoUrl
+                                      }
+                                      alt={`${comment.author.firstName} ${comment.author.lastName}`}
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        borderRadius: "50%",
+                                        objectFit: "cover",
+                                      }}
+                                    />
+                                  ) : (
+                                    <>
+                                      {comment.author?.firstName
+                                        ?.charAt(0)
+                                        .toUpperCase()}
+
+                                      {comment.author?.lastName
+                                        ?.charAt(0)
+                                        .toUpperCase()}
+                                    </>
+                                  )}
+                                </div>
+
+                                <strong>
+                                  {comment.author?.firstName}{" "}
+                                  {comment.author?.lastName}
+                                </strong>
+                              </div>
 
                               <p>
                                 {comment.content}

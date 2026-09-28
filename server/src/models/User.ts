@@ -10,6 +10,10 @@ export interface IUser extends Document {
   about?: string;
   location?: string;
   skills?: string[];
+
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +68,16 @@ const userSchema = new Schema<IUser>(
     skills: {
       type: [String],
       default: [],
+    },
+
+    resetPasswordToken: {
+      type: String,
+      default: undefined,
+    },
+
+    resetPasswordExpires: {
+      type: Date,
+      default: undefined,
     },
   },
   {

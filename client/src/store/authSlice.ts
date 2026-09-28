@@ -19,10 +19,13 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
+const storedToken = localStorage.getItem("connectsphere_token");
+const storedUser = localStorage.getItem("connectsphere_user");
+
 const initialState: AuthState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
+  user: storedUser ? JSON.parse(storedUser) : null,
+  token: storedToken || null,
+  isAuthenticated: !!storedToken,
 };
 
 const authSlice = createSlice({
@@ -32,21 +35,45 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ user: User; token: string }>
+      action: PayloadAction<{
+        user: User;
+        token: string;
+      }>
     ) => {
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
+
+      localStorage.setItem(
+        "connectsphere_token",
+        action.payload.token
+      );
+
+      localStorage.setItem(
+        "connectsphere_user",
+        JSON.stringify(action.payload.user)
+      );
     },
 
-    updateUser: (state, action: PayloadAction<User>) => {
+    updateUser: (
+      state,
+      action: PayloadAction<User>
+    ) => {
       state.user = action.payload;
+
+      localStorage.setItem(
+        "connectsphere_user",
+        JSON.stringify(action.payload)
+      );
     },
 
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+
+      localStorage.removeItem("connectsphere_token");
+      localStorage.removeItem("connectsphere_user");
     },
   },
 });

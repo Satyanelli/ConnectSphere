@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -8,7 +9,9 @@ function Navbar() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const user = useSelector((state: RootState) => state.auth.user);
+  const user = useSelector(
+    (state: RootState) => state.auth.user
+  );
 
   const handleLogout = () => {
     dispatch(logout());
@@ -27,8 +30,24 @@ function Navbar() {
             Home
           </Link>
 
+          <Link to="/create-post" className="navbar-link">
+            Create Post
+          </Link>
+
           <Link to="/profile" className="navbar-link">
             Profile
+          </Link>
+
+          <Link to="/connections" className="navbar-link">
+            Connections
+          </Link>
+
+          <Link to="/requests" className="navbar-link">
+            Requests
+          </Link>
+
+          <Link to="/messages" className="navbar-link">
+            Messages
           </Link>
 
           <span className="navbar-user">
@@ -49,3 +68,4 @@ function Navbar() {
 }
 
 export default Navbar;
+
