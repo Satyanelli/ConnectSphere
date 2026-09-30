@@ -1,5 +1,19 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+export interface IExperience {
+  role: string;
+  company: string;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface IEducation {
+  institution: string;
+  degree: string;
+  startDate: string;
+  endDate?: string;
+}
+
 export interface IUser extends Document {
   firstName: string;
   lastName: string;
@@ -11,12 +25,77 @@ export interface IUser extends Document {
   location?: string;
   skills?: string[];
 
+  experience?: IExperience[];
+  education?: IEducation[];
+
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
 
   createdAt: Date;
   updatedAt: Date;
 }
+
+const experienceSchema = new Schema<IExperience>(
+  {
+    role: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    company: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    startDate: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    endDate: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
+const educationSchema = new Schema<IEducation>(
+  {
+    institution: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    degree: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    startDate: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    endDate: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+  },
+  {
+    _id: false,
+  }
+);
 
 const userSchema = new Schema<IUser>(
   {
@@ -67,6 +146,16 @@ const userSchema = new Schema<IUser>(
 
     skills: {
       type: [String],
+      default: [],
+    },
+
+    experience: {
+      type: [experienceSchema],
+      default: [],
+    },
+
+    education: {
+      type: [educationSchema],
       default: [],
     },
 

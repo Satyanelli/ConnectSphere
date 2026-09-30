@@ -58,7 +58,10 @@ export const getPosts = async (
 ): Promise<void> => {
   try {
     const posts = await Post.find()
-      .populate("author", "firstName lastName photoUrl headline")
+      .populate(
+        "author",
+        "firstName lastName photoUrl headline"
+      )
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -66,6 +69,55 @@ export const getPosts = async (
     });
   } catch (error) {
     console.error("Get posts error:", error);
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+// Search posts by keyword
+export const searchPosts = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const search = req.query.search;
+
+    if (!search || typeof search !== "string") {
+      res.status(400).json({
+        message: "Search keyword is required",
+      });
+      return;
+    }
+
+    const searchTerm = search.trim();
+
+    if (!searchTerm) {
+      res.status(400).json({
+        message: "Search keyword is required",
+      });
+      return;
+    }
+
+    const posts = await Post.find({
+      content: {
+        $regex: searchTerm,
+        $options: "i",
+      },
+    })
+      .populate(
+        "author",
+        "firstName lastName photoUrl headline"
+      )
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.status(200).json({
+      posts,
+    });
+  } catch (error) {
+    console.error("Search posts error:", error);
 
     res.status(500).json({
       message: "Internal server error",

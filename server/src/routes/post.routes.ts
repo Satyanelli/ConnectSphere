@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   createPost,
   getPosts,
+  searchPosts,
   toggleLike,
   deletePost,
 } from "../controllers/post.controller.js";
@@ -16,6 +17,9 @@ router.post("/", protect, createPost);
 
 // Get all posts
 router.get("/", protect, getPosts);
+
+// Search posts by keyword
+router.get("/search", protect, searchPosts);
 
 // Like / Unlike a post
 router.post("/:id/like", protect, toggleLike);

@@ -7,6 +7,20 @@ import { updateUser } from "../store/authSlice";
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
 
+interface Experience {
+  role: string;
+  company: string;
+  startDate: string;
+  endDate?: string;
+}
+
+interface Education {
+  institution: string;
+  degree: string;
+  startDate: string;
+  endDate?: string;
+}
+
 interface ProfileUser {
   id: string;
   _id?: string;
@@ -18,6 +32,8 @@ interface ProfileUser {
   about?: string;
   location?: string;
   skills?: string[];
+  experience?: Experience[];
+  education?: Education[];
 }
 
 interface ConnectionRequest {
@@ -52,6 +68,12 @@ function Profile() {
   const [about, setAbout] = useState("");
   const [location, setLocation] = useState("");
   const [skills, setSkills] = useState("");
+
+  const [experience, setExperience] =
+    useState<Experience[]>([]);
+
+  const [education, setEducation] =
+    useState<Education[]>([]);
 
   const [relationshipStatus, setRelationshipStatus] =
     useState("");
@@ -99,6 +121,9 @@ function Profile() {
         setAbout(profileUser.about || "");
         setLocation(profileUser.location || "");
         setSkills(profileUser.skills?.join(", ") || "");
+
+        setExperience(profileUser.experience || []);
+        setEducation(profileUser.education || []);
       } catch (error: any) {
         console.error("Get profile error:", error);
 
@@ -304,6 +329,80 @@ function Profile() {
     navigate(`/messages/${userId}`);
   };
 
+  const handleExperienceChange = (
+    index: number,
+    field: keyof Experience,
+    value: string
+  ) => {
+    setExperience((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: value,
+            }
+          : item
+      )
+    );
+  };
+
+  const addExperience = () => {
+    setExperience((current) => [
+      ...current,
+      {
+        role: "",
+        company: "",
+        startDate: "",
+        endDate: "",
+      },
+    ]);
+  };
+
+  const removeExperience = (index: number) => {
+    setExperience((current) =>
+      current.filter(
+        (_item, itemIndex) => itemIndex !== index
+      )
+    );
+  };
+
+  const handleEducationChange = (
+    index: number,
+    field: keyof Education,
+    value: string
+  ) => {
+    setEducation((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: value,
+            }
+          : item
+      )
+    );
+  };
+
+  const addEducation = () => {
+    setEducation((current) => [
+      ...current,
+      {
+        institution: "",
+        degree: "",
+        startDate: "",
+        endDate: "",
+      },
+    ]);
+  };
+
+  const removeEducation = (index: number) => {
+    setEducation((current) =>
+      current.filter(
+        (_item, itemIndex) => itemIndex !== index
+      )
+    );
+  };
+
   const handleSubmit = async (
     event: React.FormEvent<HTMLFormElement>
   ) => {
@@ -327,11 +426,16 @@ function Profile() {
         about,
         location,
         skills: skillsArray,
+        experience,
+        education,
       });
 
       const updatedUser = response.data.user;
 
       setUser(updatedUser);
+
+      setExperience(updatedUser.experience || []);
+      setEducation(updatedUser.education || []);
 
       dispatch(updateUser(updatedUser));
 
@@ -700,6 +804,164 @@ function Profile() {
                   </small>
                 </div>
 
+                <div className="form-group">
+                  <label>Experience</label>
+
+                  {experience.map((item, index) => (
+                    <div
+                      key={index}
+                      className="form-group"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Role"
+                        value={item.role}
+                        onChange={(event) =>
+                          handleExperienceChange(
+                            index,
+                            "role",
+                            event.target.value
+                          )
+                        }
+                      />
+
+                      <input
+                        type="text"
+                        placeholder="Company"
+                        value={item.company}
+                        onChange={(event) =>
+                          handleExperienceChange(
+                            index,
+                            "company",
+                            event.target.value
+                          )
+                        }
+                      />
+
+                      <input
+                        type="month"
+                        value={item.startDate}
+                        onChange={(event) =>
+                          handleExperienceChange(
+                            index,
+                            "startDate",
+                            event.target.value
+                          )
+                        }
+                      />
+
+                      <input
+                        type="month"
+                        value={item.endDate || ""}
+                        onChange={(event) =>
+                          handleExperienceChange(
+                            index,
+                            "endDate",
+                            event.target.value
+                          )
+                        }
+                      />
+
+                      <button
+                        type="button"
+                        className="auth-button"
+                        onClick={() =>
+                          removeExperience(index)
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="auth-button"
+                    onClick={addExperience}
+                  >
+                    Add Experience
+                  </button>
+                </div>
+
+                <div className="form-group">
+                  <label>Education</label>
+
+                  {education.map((item, index) => (
+                    <div
+                      key={index}
+                      className="form-group"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Institution"
+                        value={item.institution}
+                        onChange={(event) =>
+                          handleEducationChange(
+                            index,
+                            "institution",
+                            event.target.value
+                          )
+                        }
+                      />
+
+                      <input
+                        type="text"
+                        placeholder="Degree"
+                        value={item.degree}
+                        onChange={(event) =>
+                          handleEducationChange(
+                            index,
+                            "degree",
+                            event.target.value
+                          )
+                        }
+                      />
+
+                      <input
+                        type="month"
+                        value={item.startDate}
+                        onChange={(event) =>
+                          handleEducationChange(
+                            index,
+                            "startDate",
+                            event.target.value
+                          )
+                        }
+                      />
+
+                      <input
+                        type="month"
+                        value={item.endDate || ""}
+                        onChange={(event) =>
+                          handleEducationChange(
+                            index,
+                            "endDate",
+                            event.target.value
+                          )
+                        }
+                      />
+
+                      <button
+                        type="button"
+                        className="auth-button"
+                        onClick={() =>
+                          removeEducation(index)
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="auth-button"
+                    onClick={addEducation}
+                  >
+                    Add Education
+                  </button>
+                </div>
+
                 <button
                   type="submit"
                   className="auth-button profile-save-button"
@@ -742,6 +1004,66 @@ function Profile() {
                       ? user.skills.join(", ")
                       : "No skills added"}
                   </p>
+                </div>
+
+                <div className="form-group">
+                  <label>Experience</label>
+
+                  {user?.experience &&
+                  user.experience.length > 0 ? (
+                    user.experience.map(
+                      (item, index) => (
+                        <div key={index}>
+                          <p>
+                            <strong>
+                              {item.role}
+                            </strong>
+                          </p>
+
+                          <p>{item.company}</p>
+
+                          <p>
+                            {item.startDate} -{" "}
+                            {item.endDate ||
+                              "Present"}
+                          </p>
+                        </div>
+                      )
+                    )
+                  ) : (
+                    <p>No experience added</p>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label>Education</label>
+
+                  {user?.education &&
+                  user.education.length > 0 ? (
+                    user.education.map(
+                      (item, index) => (
+                        <div key={index}>
+                          <p>
+                            <strong>
+                              {item.degree}
+                            </strong>
+                          </p>
+
+                          <p>
+                            {item.institution}
+                          </p>
+
+                          <p>
+                            {item.startDate} -{" "}
+                            {item.endDate ||
+                              "Present"}
+                          </p>
+                        </div>
+                      )
+                    )
+                  ) : (
+                    <p>No education added</p>
+                  )}
                 </div>
               </div>
             )}
