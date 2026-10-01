@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -34,12 +35,17 @@ function Login() {
         }
       );
 
-      const { token, user } = response.data;
+      const {
+        accessToken,
+        refreshToken,
+        user,
+      } = response.data;
 
       dispatch(
         setCredentials({
           user,
-          token,
+          accessToken,
+          refreshToken,
         })
       );
 
@@ -154,3 +160,5 @@ function Login() {
 }
 
 export default Login;
+
+

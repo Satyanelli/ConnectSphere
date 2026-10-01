@@ -1,3 +1,4 @@
+
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IExperience {
@@ -28,6 +29,8 @@ export interface IUser extends Document {
   experience?: IExperience[];
   education?: IEducation[];
 
+  refreshToken?: string;
+
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
 
@@ -42,19 +45,16 @@ const experienceSchema = new Schema<IExperience>(
       required: true,
       trim: true,
     },
-
     company: {
       type: String,
       required: true,
       trim: true,
     },
-
     startDate: {
       type: String,
       required: true,
       trim: true,
     },
-
     endDate: {
       type: String,
       default: "",
@@ -73,19 +73,16 @@ const educationSchema = new Schema<IEducation>(
       required: true,
       trim: true,
     },
-
     degree: {
       type: String,
       required: true,
       trim: true,
     },
-
     startDate: {
       type: String,
       required: true,
       trim: true,
     },
-
     endDate: {
       type: String,
       default: "",
@@ -159,6 +156,11 @@ const userSchema = new Schema<IUser>(
       default: [],
     },
 
+    refreshToken: {
+      type: String,
+      default: undefined,
+    },
+
     resetPasswordToken: {
       type: String,
       default: undefined,
@@ -169,11 +171,16 @@ const userSchema = new Schema<IUser>(
       default: undefined,
     },
   },
+
   {
     timestamps: true,
   }
 );
 
-const User = mongoose.model<IUser>("User", userSchema);
+const User = mongoose.model<IUser>(
+  "User",
+  userSchema
+);
 
 export default User;
+

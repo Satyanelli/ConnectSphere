@@ -1,3 +1,4 @@
+
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -15,17 +16,28 @@ interface User {
 
 interface AuthState {
   user: User | null;
-  token: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
 }
 
-const storedToken = localStorage.getItem("connectsphere_token");
-const storedUser = localStorage.getItem("connectsphere_user");
+const storedAccessToken = localStorage.getItem(
+  "connectsphere_access_token"
+);
+
+const storedRefreshToken = localStorage.getItem(
+  "connectsphere_refresh_token"
+);
+
+const storedUser = localStorage.getItem(
+  "connectsphere_user"
+);
 
 const initialState: AuthState = {
   user: storedUser ? JSON.parse(storedUser) : null,
-  token: storedToken || null,
-  isAuthenticated: !!storedToken,
+  accessToken: storedAccessToken || null,
+  refreshToken: storedRefreshToken || null,
+  isAuthenticated: !!storedAccessToken,
 };
 
 const authSlice = createSlice({
@@ -37,21 +49,40 @@ const authSlice = createSlice({
       state,
       action: PayloadAction<{
         user: User;
-        token: string;
+        accessToken: string;
+        refreshToken: string;
       }>
     ) => {
       state.user = action.payload.user;
-      state.token = action.payload.token;
+      state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
       state.isAuthenticated = true;
 
       localStorage.setItem(
-        "connectsphere_token",
-        action.payload.token
+        "connectsphere_access_token",
+        action.payload.accessToken
+      );
+
+      localStorage.setItem(
+        "connectsphere_refresh_token",
+        action.payload.refreshToken
       );
 
       localStorage.setItem(
         "connectsphere_user",
         JSON.stringify(action.payload.user)
+      );
+    },
+
+    updateAccessToken: (
+      state,
+      action: PayloadAction<string>
+    ) => {
+      state.accessToken = action.payload;
+
+      localStorage.setItem(
+        "connectsphere_access_token",
+        action.payload
       );
     },
 
@@ -69,17 +100,28 @@ const authSlice = createSlice({
 
     logout: (state) => {
       state.user = null;
-      state.token = null;
+      state.accessToken = null;
+      state.refreshToken = null;
       state.isAuthenticated = false;
 
-      localStorage.removeItem("connectsphere_token");
-      localStorage.removeItem("connectsphere_user");
+      localStorage.removeItem(
+        "connectsphere_access_token"
+      );
+
+      localStorage.removeItem(
+        "connectsphere_refresh_token"
+      );
+
+      localStorage.removeItem(
+        "connectsphere_user"
+      );
     },
   },
 });
 
 export const {
   setCredentials,
+  updateAccessToken,
   updateUser,
   logout,
 } = authSlice.actions;

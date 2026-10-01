@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -12,7 +13,6 @@ import ResetPassword from "./pages/ResetPassword";
 
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
-import Search from "./pages/Search";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Connections from "./pages/Connections";
 import Requests from "./pages/Requests";
@@ -58,11 +58,6 @@ function App() {
           <Route
             path="/profile/:userId"
             element={<Profile />}
-          />
-
-          <Route
-            path="/search"
-            element={<Search />}
           />
 
           <Route

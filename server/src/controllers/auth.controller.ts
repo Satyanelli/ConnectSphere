@@ -1,3 +1,4 @@
+
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -126,8 +127,10 @@ export const login = async (
       return;
     }
 
-    // 4. Get JWT secret
+    // 4. Get JWT secrets
     const jwtSecret = process.env.JWT_SECRET;
+    const jwtRefreshSecret =
+      process.env.JWT_REFRESH_SECRET;
 
     if (!jwtSecret) {
       throw new Error(
@@ -135,21 +138,44 @@ export const login = async (
       );
     }
 
-    // 5. Generate JWT token
-    const token = jwt.sign(
+    if (!jwtRefreshSecret) {
+      throw new Error(
+        "JWT_REFRESH_SECRET is not defined"
+      );
+    }
+
+    // 5. Generate short-lived access token
+    const accessToken = jwt.sign(
       {
         userId: user._id.toString(),
       },
       jwtSecret,
       {
-        expiresIn: "1h",
+        expiresIn: "15m",
       }
     );
 
-    // 6. Send successful login response
+    // 6. Generate long-lived refresh token
+    const refreshToken = jwt.sign(
+      {
+        userId: user._id.toString(),
+      },
+      jwtRefreshSecret,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    // 7. Store refresh token in database
+    user.refreshToken = refreshToken;
+
+    await user.save();
+
+    // 8. Send successful login response
     res.status(200).json({
       message: "Login successful",
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user._id,
         firstName: user.firstName,
@@ -162,6 +188,113 @@ export const login = async (
     });
   } catch (error) {
     console.error("Login error:", error);
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+/*
+ * Refresh Access Token
+ *
+ * User provides their refresh token.
+ * We verify it and generate a new access token.
+ */
+export const refreshToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { refreshToken: token } = req.body;
+
+    // 1. Validate refresh token
+    if (!token || typeof token !== "string") {
+      res.status(401).json({
+        message: "Refresh token is required",
+      });
+      return;
+    }
+
+    // 2. Get refresh token secret
+    const jwtRefreshSecret =
+      process.env.JWT_REFRESH_SECRET;
+
+    if (!jwtRefreshSecret) {
+      throw new Error(
+        "JWT_REFRESH_SECRET is not defined"
+      );
+    }
+
+    // 3. Verify refresh token
+    let decoded: { userId: string };
+
+    try {
+      decoded = jwt.verify(
+        token,
+        jwtRefreshSecret
+      ) as { userId: string };
+    } catch (error) {
+      res.status(401).json({
+        message:
+          "Invalid or expired refresh token",
+      });
+      return;
+    }
+
+    // 4. Find user
+    const user = await User.findById(
+      decoded.userId
+    );
+
+    if (!user) {
+      res.status(401).json({
+        message: "User not found",
+      });
+      return;
+    }
+
+    // 5. Check stored refresh token
+    if (
+      !user.refreshToken ||
+      user.refreshToken !== token
+    ) {
+      res.status(401).json({
+        message: "Invalid refresh token",
+      });
+      return;
+    }
+
+    // 6. Get access token secret
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      throw new Error(
+        "JWT_SECRET is not defined"
+      );
+    }
+
+    // 7. Generate new access token
+    const accessToken = jwt.sign(
+      {
+        userId: user._id.toString(),
+      },
+      jwtSecret,
+      {
+        expiresIn: "15m",
+      }
+    );
+
+    // 8. Send new access token
+    res.status(200).json({
+      message: "Access token refreshed successfully",
+      accessToken,
+    });
+  } catch (error) {
+    console.error(
+      "Refresh token error:",
+      error
+    );
 
     res.status(500).json({
       message: "Internal server error",
@@ -333,3 +466,4 @@ export const resetPassword = async (
     });
   }
 };
+

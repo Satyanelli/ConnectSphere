@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -31,10 +32,6 @@ function Navbar() {
 
           <Link to="/create-post" className="navbar-link">
             Create Post
-          </Link>
-
-          <Link to="/search" className="navbar-link">
-            Search
           </Link>
 
           <Link to="/profile" className="navbar-link">
@@ -71,3 +68,4 @@ function Navbar() {
 }
 
 export default Navbar;
+
