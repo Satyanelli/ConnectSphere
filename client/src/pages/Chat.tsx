@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
-import {
-  getConversation,
-  sendMessage,
-} from "../api/messages";
+import { getConversation } from "../api/messages";
 import api from "../api/axios";
+import socket, {
+  connectSocket,
+} from "../api/socket";
 import { useSelector } from "react-redux";
 import type { RootState } from "../store/store";
 
@@ -34,13 +34,116 @@ function Chat() {
   );
 
   const [user, setUser] = useState<User | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(
+    []
+  );
   const [text, setText] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
+  /*
+    Connect to Socket.IO and listen for messages
+  */
+  useEffect(() => {
+    connectSocket();
+
+    console.log("Connecting to Socket.IO...");
+
+    socket.on("connect", () => {
+      console.log(
+        "Socket connected:",
+        socket.id
+      );
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error(
+        "Socket connection error:",
+        error.message
+      );
+
+      setError(
+        "Unable to connect to real-time messaging."
+      );
+    });
+
+    socket.on(
+      "newMessage",
+      (message: Message) => {
+        console.log(
+          "New real-time message:",
+          message
+        );
+
+        if (!userId) {
+          return;
+        }
+
+        const senderId = message.senderId._id;
+
+        const receiverId =
+          message.receiverId._id;
+
+        const belongsToCurrentConversation =
+          (senderId === currentUser?.id &&
+            receiverId === userId) ||
+          (senderId === userId &&
+            receiverId === currentUser?.id);
+
+        if (!belongsToCurrentConversation) {
+          return;
+        }
+
+        setMessages((previousMessages) => {
+          const alreadyExists =
+            previousMessages.some(
+              (existingMessage) =>
+                existingMessage._id ===
+                message._id
+            );
+
+          if (alreadyExists) {
+            return previousMessages;
+          }
+
+          return [
+            ...previousMessages,
+            message,
+          ];
+        });
+
+        setSending(false);
+      }
+    );
+
+    socket.on(
+      "messageError",
+      (data: { message: string }) => {
+        console.error(
+          "Socket message error:",
+          data.message
+        );
+
+        setError(data.message);
+        setSending(false);
+      }
+    );
+
+    return () => {
+      socket.off("connect");
+      socket.off("connect_error");
+      socket.off("newMessage");
+      socket.off("messageError");
+
+      socket.disconnect();
+    };
+  }, [userId, currentUser?.id]);
+
+  /*
+    Load conversation history
+  */
   useEffect(() => {
     const fetchChat = async () => {
       if (!userId) {
@@ -52,11 +155,13 @@ function Chat() {
       try {
         setError("");
 
-        const [conversationResponse, userResponse] =
-          await Promise.all([
-            getConversation(userId),
-            api.get(`/users/${userId}`),
-          ]);
+        const [
+          conversationResponse,
+          userResponse,
+        ] = await Promise.all([
+          getConversation(userId),
+          api.get(`/users/${userId}`),
+        ]);
 
         setMessages(
           conversationResponse.messages || []
@@ -64,7 +169,10 @@ function Chat() {
 
         setUser(userResponse.data.user);
       } catch (error: any) {
-        console.error("Get chat error:", error);
+        console.error(
+          "Get chat error:",
+          error
+        );
 
         setError(
           error.response?.data?.message ||
@@ -76,62 +184,43 @@ function Chat() {
     };
 
     fetchChat();
-
-    // Check for new messages every 5 seconds
-    const interval = setInterval(() => {
-      if (userId) {
-        getConversation(userId)
-          .then((response) => {
-            setMessages(response.messages || []);
-          })
-          .catch((error) => {
-            console.error(
-              "Polling conversation error:",
-              error
-            );
-          });
-      }
-    }, 5000);
-
-    // Stop polling when leaving the page
-    return () => {
-      clearInterval(interval);
-    };
   }, [userId]);
 
-  const handleSendMessage = async (
+  /*
+    Send message through Socket.IO
+  */
+  const handleSendMessage = (
     event: React.FormEvent
   ) => {
     event.preventDefault();
 
     const trimmedText = text.trim();
 
-    if (!trimmedText || !userId) {
+    if (
+      !trimmedText ||
+      !userId ||
+      sending
+    ) {
       return;
     }
 
-    try {
-      setSending(true);
-      setError("");
-
-      await sendMessage(userId, trimmedText);
-
-      setText("");
-
-      // Refresh messages immediately after sending
-      const response = await getConversation(userId);
-
-      setMessages(response.messages || []);
-    } catch (error: any) {
-      console.error("Send message error:", error);
-
+    if (!socket.connected) {
       setError(
-        error.response?.data?.message ||
-          "Unable to send message."
+        "Real-time connection is not available."
       );
-    } finally {
-      setSending(false);
+
+      return;
     }
+
+    setSending(true);
+    setError("");
+
+    socket.emit("sendMessage", {
+      receiverId: userId,
+      text: trimmedText,
+    });
+
+    setText("");
   };
 
   return (
@@ -171,7 +260,8 @@ function Chat() {
                     maxHeight: "500px",
                     overflowY: "auto",
                     padding: "20px",
-                    border: "1px solid #ddd",
+                    border:
+                      "1px solid #ddd",
                     borderRadius: "8px",
                     marginBottom: "20px",
                   }}
@@ -182,45 +272,59 @@ function Chat() {
                       conversation!
                     </div>
                   ) : (
-                    messages.map((message) => {
-                      const isMine =
-                        message.senderId._id ===
-                        currentUser?.id;
+                    messages.map(
+                      (message) => {
+                        const isMine =
+                          message.senderId
+                            ._id ===
+                          currentUser?.id;
 
-                      return (
-                        <div
-                          key={message._id}
-                          style={{
-                            display: "flex",
-                            justifyContent: isMine
-                              ? "flex-end"
-                              : "flex-start",
-                            marginBottom: "12px",
-                          }}
-                        >
+                        return (
                           <div
+                            key={
+                              message._id
+                            }
                             style={{
-                              maxWidth: "70%",
-                              padding: "10px 14px",
-                              borderRadius: "12px",
-                              backgroundColor: isMine
-                                ? "#dbeafe"
-                                : "#f3f4f6",
+                              display:
+                                "flex",
+                              justifyContent:
+                                isMine
+                                  ? "flex-end"
+                                  : "flex-start",
+                              marginBottom:
+                                "12px",
                             }}
                           >
-                            <div>
-                              {message.text}
-                            </div>
+                            <div
+                              style={{
+                                maxWidth:
+                                  "70%",
+                                padding:
+                                  "10px 14px",
+                                borderRadius:
+                                  "12px",
+                                backgroundColor:
+                                  isMine
+                                    ? "#dbeafe"
+                                    : "#f3f4f6",
+                              }}
+                            >
+                              <div>
+                                {
+                                  message.text
+                                }
+                              </div>
 
-                            <small>
-                              {new Date(
-                                message.createdAt
-                              ).toLocaleString()}
-                            </small>
+                              <small>
+                                {new Date(
+                                  message.createdAt
+                                ).toLocaleString()}
+                              </small>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      }
+                    )
                   )}
                 </div>
 
@@ -231,7 +335,9 @@ function Chat() {
                 )}
 
                 <form
-                  onSubmit={handleSendMessage}
+                  onSubmit={
+                    handleSendMessage
+                  }
                   style={{
                     display: "flex",
                     gap: "10px",
@@ -241,7 +347,9 @@ function Chat() {
                     type="text"
                     value={text}
                     onChange={(event) =>
-                      setText(event.target.value)
+                      setText(
+                        event.target.value
+                      )
                     }
                     placeholder="Type a message..."
                     disabled={sending}
@@ -254,10 +362,13 @@ function Chat() {
                   <button
                     type="submit"
                     disabled={
-                      sending || !text.trim()
+                      sending ||
+                      !text.trim()
                     }
                   >
-                    {sending ? "Sending..." : "Send"}
+                    {sending
+                      ? "Sending..."
+                      : "Send"}
                   </button>
                 </form>
               </>
